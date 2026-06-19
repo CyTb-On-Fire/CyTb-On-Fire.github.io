@@ -6,9 +6,10 @@
     <title>Виджет-Фортепиано</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #2a2a2a;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,315 +18,515 @@
             overflow: hidden;
             user-select: none;
         }
+
+        .piano-wrap {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 16px 16px 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        }
+
         .piano {
             display: flex;
             position: relative;
-            width: 100%;
-            max-width: 600px;
             height: 200px;
-            margin: 10px 0;
         }
-        .key {
+
+        /* ---- Белая клавиша ---- */
+        .white-key {
+            position: relative;
+            width: 52px;
+            height: 200px;
+            background: linear-gradient(180deg, #f0f0f0 0%, #ffffff 60%, #f8f8f8 100%);
+            border: 1px solid #999;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
             cursor: pointer;
-            border: 1px solid #333;
             display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            padding-bottom: 10px;
-            font-size: 12px;
-            color: #555;
-            transition: background 0.05s, transform 0.05s;
-        }
-        .white {
-            background: white;
-            height: 100%;
-            flex: 1;
-            border-radius: 0 0 5px 5px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 8px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #888;
+            transition: background 0.04s;
+            /* Небольшой зазор между белыми */
+            margin-right: 2px;
+            box-shadow: inset 0 -4px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.3);
             z-index: 1;
         }
-        .white.active {
-            background: #e0e0e0;
-            transform: translateY(2px);
+        .white-key:last-child { margin-right: 0; }
+
+        .white-key.active {
+            background: linear-gradient(180deg, #dce8ff 0%, #eef3ff 60%, #e8eeff 100%);
+            box-shadow: inset 0 -2px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.3);
         }
-        .black {
-            background: #1a1a1a;
-            height: 60%;
-            width: 8%;
+
+        /* ---- Чёрная клавиша ---- */
+        .black-key {
             position: absolute;
-            top: 0;
-            border-radius: 0 0 3px 3px;
+            /* ширина и высота относительно белой клавиши (52px) */
+            width: 32px;
+            height: 124px;
+            background: linear-gradient(180deg, #444 0%, #111 40%, #000 100%);
+            border-radius: 0 0 4px 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 6px;
+            font-size: 9px;
+            color: #666;
             z-index: 2;
-            color: white;
-            font-size: 10px;
-            padding-bottom: 5px;
-            border: 1px solid #000;
+            box-shadow: 2px 4px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: background 0.04s;
+            top: 0;
         }
-        .black.active {
-            background: #444;
-            transform: translateY(2px);
+
+        .black-key.active {
+            background: linear-gradient(180deg, #666 0%, #333 40%, #222 100%);
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
         }
-        .info {
-            margin-top: 10px;
-            font-size: 13px;
+
+        /* Позиции чёрных клавиш:
+           Паттерн белых: C D E F G A B
+           Чёрные после:  C D   F G A
+           Индекс белой:  0 1   2 3 4
+           left = (индекс белой × (52+2)) + 52 - 16 = правый край белой - половина чёрной */
+        /* C# — после C (white[0]) */
+        .black-key.cs { left: calc(0 * 54px + 54px - 16px); }
+        /* D# — после D (white[1]) */
+        .black-key.ds { left: calc(1 * 54px + 54px - 16px); }
+        /* F# — после F (white[3]) */
+        .black-key.fs { left: calc(3 * 54px + 54px - 16px); }
+        /* G# — после G (white[4]) */
+        .black-key.gs { left: calc(4 * 54px + 54px - 16px); }
+        /* A# — после A (white[5]) */
+        .black-key.as { left: calc(5 * 54px + 54px - 16px); }
+
+        /* ---- Нижняя панель ---- */
+        .bottom {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hint {
+            font-size: 11px;
             color: #666;
             text-align: center;
+            margin-bottom: 8px;
         }
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-            align-items: center;
-        }
-        .controls button {
+
+        button, select {
             padding: 5px 10px;
-            border: 1px solid #ccc;
-            background: white;
+            border: 1px solid #555;
+            background: #333;
+            color: #ccc;
             border-radius: 5px;
             cursor: pointer;
             font-size: 12px;
         }
-        .controls button:hover {
-            background: #e0e0e0;
-        }
+        button:hover, select:hover { background: #444; }
+        select option { background: #333; }
+
         #octaveDisplay {
-            font-size: 13px;
-            color: #333;
-            min-width: 70px;
+            font-size: 12px;
+            color: #aaa;
+            min-width: 65px;
             text-align: center;
         }
+        label { font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
-    <div class="piano" id="piano"></div>
-    <div class="info" id="info">Клавиши: §/> 1 2 3 4 5 6 7 8 9 0 - =</div>
-    <div class="controls">
+<div class="piano-wrap">
+    <div class="hint">§ / &gt; / ~ &nbsp; 1 2 3 4 5 6 7 8 9 0 - =&nbsp;&nbsp;|&nbsp;&nbsp;Левый ⌘ — октава ↓&nbsp;&nbsp;Правый ⌘ — октава ↑</div>
+    <div class="piano" id="piano">
+        <!-- Белые клавиши -->
+        <div class="white-key" data-note="0" id="wk-0">C</div>
+        <div class="white-key" data-note="2" id="wk-2">D</div>
+        <div class="white-key" data-note="4" id="wk-4">E</div>
+        <div class="white-key" data-note="5" id="wk-5">F</div>
+        <div class="white-key" data-note="7" id="wk-7">G</div>
+        <div class="white-key" data-note="9" id="wk-9">A</div>
+        <div class="white-key" data-note="11" id="wk-11">B</div>
+        <!-- Чёрные клавиши -->
+        <div class="black-key cs" data-note="1">C#</div>
+        <div class="black-key ds" data-note="3">D#</div>
+        <div class="black-key fs" data-note="6">F#</div>
+        <div class="black-key gs" data-note="8">G#</div>
+        <div class="black-key as" data-note="10">A#</div>
+    </div>
+    <div class="bottom">
+        <label>Тембр:
+            <select id="timbreSelect">
+                <option value="piano">🎹 Фортепиано</option>
+                <option value="harpsichord">🪕 Клавесин</option>
+                <option value="organ">🎸 Орган</option>
+                <option value="synth">🎛 Синтезатор</option>
+            </select>
+        </label>
         <button id="octaveDown">⬅ Октава вниз</button>
         <span id="octaveDisplay">Октава 4</span>
         <button id="octaveUp">Октава вверх ➡</button>
     </div>
+</div>
 
-    <script>
-        // ----- Настройки -----
-        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        // Маппинг клавиш: клавиша -> индекс ноты в октаве (0-11)
-        // Добавлена клавиша '§' для ноты C (индекс 0)
-        const keyMap = {
-            '>': 0,  // C
-            '§': 0,  // C (альтернативная клавиша)
-            '1': 1,  // C#
-            '2': 2,  // D
-            '3': 3,  // D#
-            '4': 4,  // E
-            '5': 5,  // F
-            '6': 6,  // F#
-            '7': 7,  // G
-            '8': 8,  // G#
-            '9': 9,  // A
-            '0': 10, // A#
-            '-': 11, // B
-            '=': 12  // C (следующая октава)
-        };
+<script>
+// ============================================================
+// Маппинг клавиш
+// ============================================================
+const KEY_MAP = {
+    '>': 0, '§': 0, '~': 0,   // C
+    '1': 1,                    // C#
+    '2': 2,                    // D
+    '3': 3,                    // D#
+    '4': 4,                    // E
+    '5': 5,                    // F
+    '6': 6,                    // F#
+    '7': 7,                    // G
+    '8': 8,                    // G#
+    '9': 9,                    // A
+    '0': 10,                   // A#
+    '-': 11,                   // B
+    '=': 'next_c'              // C следующей октавы
+};
 
-        let currentOctave = 4;
-        const pianoElement = document.getElementById('piano');
-        const octaveDisplay = document.getElementById('octaveDisplay');
-        
-        // Хранилище для активных осцилляторов и гейнов
-        const activeNotes = {};
+let currentOctave = 4;
+let currentTimbre = 'piano';
+let audioCtx = null;
 
-        // ----- Создание клавиш -----
-        function renderPiano(octave) {
-            pianoElement.innerHTML = '';
-            const whiteKeys = [0, 2, 4, 5, 7, 9, 11]; // Индексы белых клавиш
-            const blackKeys = [1, 3, 6, 8, 10];        // Индексы черных клавиш
+// noteId → { nodes[], gainNode, startedAt }
+const activeNotes = {};
 
-            // Белые клавиши
-            whiteKeys.forEach((noteIndex) => {
-                const key = document.createElement('div');
-                key.className = 'key white';
-                key.dataset.note = noteIndex;
-                key.dataset.octave = octave;
-                key.textContent = noteNames[noteIndex];
-                key.addEventListener('mousedown', () => startNote(noteIndex, octave));
-                key.addEventListener('mouseup', () => stopNote(noteIndex, octave));
-                key.addEventListener('mouseleave', () => stopNote(noteIndex, octave));
-                pianoElement.appendChild(key);
-            });
+// ============================================================
+// Утилиты
+// ============================================================
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
 
-            // Черные клавиши (позиционируем поверх)
-            blackKeys.forEach((noteIndex) => {
-                const key = document.createElement('div');
-                key.className = 'key black';
-                key.dataset.note = noteIndex;
-                key.dataset.octave = octave;
-                key.textContent = noteNames[noteIndex];
-                
-                // Позиционирование: рассчитываем смещение в процентах от ширины контейнера
-                let leftPercent;
-                if (noteIndex === 1) { // C#
-                    leftPercent = 10;
-                } else if (noteIndex === 3) { // D#
-                    leftPercent = 24;
-                } else if (noteIndex === 6) { // F#
-                    leftPercent = 50;
-                } else if (noteIndex === 8) { // G#
-                    leftPercent = 64;
-                } else if (noteIndex === 10) { // A#
-                    leftPercent = 78;
-                }
-                key.style.left = `calc(${leftPercent}% - 4%)`; // -4% это половина ширины черной клавиши (8%)
-                key.addEventListener('mousedown', () => startNote(noteIndex, octave));
-                key.addEventListener('mouseup', () => stopNote(noteIndex, octave));
-                key.addEventListener('mouseleave', () => stopNote(noteIndex, octave));
-                pianoElement.appendChild(key);
-            });
-            octaveDisplay.textContent = `Октава ${octave}`;
+function midiToFreq(midi) {
+    return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function noteToMidi(noteIndex, octave) {
+    // noteIndex: 0=C, 1=C#, …, 11=B
+    return (octave + 1) * 12 + noteIndex;
+}
+
+// ============================================================
+// Синтез звука
+// ============================================================
+
+/**
+ * ФОРТЕПИАНО
+ * Имитация: резкая атака + длинное затухание + несколько обертонов
+ * с небольшой inharmonicity (расстройкой) — как у настоящих струн
+ */
+function startPiano(ctx, freq, masterGain) {
+    const nodes = [];
+
+    // Обертоны: [множитель частоты, относительная громкость, расстройка в центах]
+    const partials = [
+        [1,    1.0,   0],
+        [2,    0.5,   1.2],
+        [3,    0.25,  2.8],
+        [4,    0.12,  5.0],
+        [5,    0.06,  8.0],
+        [6,    0.03, 11.5],
+    ];
+
+    partials.forEach(([mult, amp, detuneCents]) => {
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq * mult;
+        osc.detune.value = detuneCents; // inharmonicity
+
+        // Атака: быстрый всплеск в самом начале
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(amp * 0.8, ctx.currentTime + 0.005);
+        // Быстрый спад первого удара
+        g.gain.exponentialRampToValueAtTime(amp * 0.4, ctx.currentTime + 0.08);
+        // Медленное затухание (sustain)
+        g.gain.exponentialRampToValueAtTime(amp * 0.001, ctx.currentTime + 4.0);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 4.5);
+
+        nodes.push(osc, g);
+    });
+
+    return nodes;
+}
+
+/**
+ * КЛАВЕСИН
+ * Имитация: очень резкая атака, быстрое затухание,
+ * яркий тембр (много высоких обертонов) — как щипок плектром
+ */
+function startHarpsichord(ctx, freq, masterGain) {
+    const nodes = [];
+
+    const partials = [
+        [1,    1.0,  0],
+        [2,    0.8,  0],
+        [3,    0.5,  0],
+        [4,    0.4,  0],
+        [5,    0.3,  0],
+        [6,    0.2,  0],
+        [7,    0.15, 0],
+        [8,    0.1,  0],
+    ];
+
+    partials.forEach(([mult, amp]) => {
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq * mult;
+
+        // Очень резкий удар
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(amp, ctx.currentTime + 0.002);
+        // Характерное быстрое затухание клавесина
+        g.gain.exponentialRampToValueAtTime(amp * 0.3, ctx.currentTime + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 1.5);
+
+        nodes.push(osc, g);
+    });
+
+    return nodes;
+}
+
+/**
+ * ОРГАН
+ * Имитация: мгновенная атака, нет затухания пока зажата клавиша,
+ * чистые синусоидальные обертоны (как трубный орган)
+ */
+function startOrgan(ctx, freq, masterGain) {
+    const nodes = [];
+
+    // Классические обертоны органа (регистры)
+    const partials = [
+        [0.5,  0.3],  // Sub-octave
+        [1,    1.0],  // Principal
+        [2,    0.5],  // Octave
+        [3,    0.25], // Quint
+        [4,    0.12], // Super octave
+    ];
+
+    partials.forEach(([mult, amp]) => {
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq * mult;
+
+        // Мгновенная атака с небольшим сглаживанием (избегаем щелчка)
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(amp, ctx.currentTime + 0.02);
+        // Без затухания — орган держит ноту
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(ctx.currentTime);
+        // stop вызовем при отпускании клавиши
+
+        nodes.push(osc, g);
+    });
+
+    return nodes;
+}
+
+/**
+ * СИНТЕЗАТОР
+ * Pad-синтезатор: медленная атака, долгое затухание, вибрато
+ */
+function startSynth(ctx, freq, masterGain) {
+    const nodes = [];
+
+    // Два слегка расстроенных осциллятора для "хора"
+    [-6, 0, 6].forEach((detune) => {
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.value = freq;
+        osc.detune.value = detune;
+
+        // Медленная атака (pad-звук)
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.3);
+
+        // Фильтр для смягчения
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = freq * 6;
+        filter.Q.value = 1;
+
+        osc.connect(filter);
+        filter.connect(g);
+        g.connect(masterGain);
+        osc.start(ctx.currentTime);
+
+        nodes.push(osc, g, filter);
+    });
+
+    return nodes;
+}
+
+// ============================================================
+// Запуск / остановка ноты
+// ============================================================
+function startNote(noteIndex, octave) {
+    const ctx = getAudioCtx();
+    const noteId = `${noteIndex}-${octave}`;
+    if (activeNotes[noteId]) return;
+
+    const freq = midiToFreq(noteToMidi(noteIndex, octave));
+
+    // Мастер-гейн (общая громкость ноты)
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0.35;
+    masterGain.connect(ctx.destination);
+
+    let nodes = [];
+    if      (currentTimbre === 'piano')       nodes = startPiano(ctx, freq, masterGain);
+    else if (currentTimbre === 'harpsichord') nodes = startHarpsichord(ctx, freq, masterGain);
+    else if (currentTimbre === 'organ')       nodes = startOrgan(ctx, freq, masterGain);
+    else if (currentTimbre === 'synth')       nodes = startSynth(ctx, freq, masterGain);
+
+    activeNotes[noteId] = { nodes, masterGain };
+
+    // Визуал
+    const el = document.querySelector(`[data-note="${noteIndex}"]`);
+    if (el) el.classList.add('active');
+}
+
+function stopNote(noteIndex, octave) {
+    const noteId = `${noteIndex}-${octave}`;
+    const note = activeNotes[noteId];
+    if (!note) return;
+
+    const ctx = getAudioCtx();
+
+    // Время release зависит от тембра
+    const releaseTime = {
+        piano:       0.4,
+        harpsichord: 0.08,
+        organ:       0.05,
+        synth:       0.6,
+    }[currentTimbre] ?? 0.2;
+
+    // Плавное затухание мастер-гейна
+    note.masterGain.gain.cancelScheduledValues(ctx.currentTime);
+    note.masterGain.gain.setValueAtTime(note.masterGain.gain.value, ctx.currentTime);
+    note.masterGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + releaseTime);
+
+    // Останавливаем все осцилляторы после release
+    note.nodes.forEach(node => {
+        if (node instanceof OscillatorNode) {
+            try { node.stop(ctx.currentTime + releaseTime + 0.05); } catch(e) {}
         }
+    });
 
-        // ----- Воспроизведение звука (Web Audio API) -----
-        let audioCtx = null;
+    delete activeNotes[noteId];
 
-        function startNote(noteIndex, octave) {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+    // Визуал
+    const el = document.querySelector(`[data-note="${noteIndex}"]`);
+    if (el) el.classList.remove('active');
+}
 
-            const noteId = `${noteIndex}-${octave}`;
-            if (activeNotes[noteId]) {
-                return; // Нота уже играет
-            }
+// ============================================================
+// Навешиваем события на клавиши
+// ============================================================
+document.querySelectorAll('.white-key, .black-key').forEach(el => {
+    const note = parseInt(el.dataset.note);
+    el.addEventListener('mousedown', e => { e.preventDefault(); startNote(note, currentOctave); });
+    el.addEventListener('mouseup',   () => stopNote(note, currentOctave));
+    el.addEventListener('mouseleave',() => stopNote(note, currentOctave));
+});
 
-            // Частота: A4 = 440Hz. Формула: 440 * 2^((n-69)/12)
-            const midiNumber = (octave + 1) * 12 + noteIndex; 
-            const freq = 440 * Math.pow(2, (midiNumber - 69) / 12);
-            
-            // Создаем осциллятор для основного тона
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            // Создаем второй осциллятор для обертонов (более богатый звук)
-            const overtoneOscillator = audioCtx.createOscillator();
-            const overtoneGainNode = audioCtx.createGain();
+// ============================================================
+// Клавиатура
+// ============================================================
+const pressedKeys = new Set();
 
-            oscillator.connect(gainNode);
-            overtoneOscillator.connect(overtoneGainNode);
-            
-            gainNode.connect(audioCtx.destination);
-            overtoneGainNode.connect(audioCtx.destination);
-            
-            oscillator.frequency.value = freq;
-            oscillator.type = 'sine'; // Основной тон - синусоида
-            
-            overtoneOscillator.frequency.value = freq * 2; // Обертон на октаву выше
-            overtoneOscillator.type = 'triangle'; // Обертон - треугольник
-            
-            // Начальная громкость
-            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            overtoneGainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            
-            oscillator.start();
-            overtoneOscillator.start();
-
-            // Сохраняем ссылки на осцилляторы и гейны, чтобы остановить их позже
-            activeNotes[noteId] = {
-                oscillator,
-                overtoneOscillator,
-                gainNode,
-                overtoneGainNode
-            };
-
-            // Визуальный отклик
-            const key = document.querySelector(`.key[data-note="${noteIndex}"][data-octave="${octave}"]`);
-            if (key) {
-                key.classList.add('active');
-            }
-        }
-
-        function stopNote(noteIndex, octave) {
-            const noteId = `${noteIndex}-${octave}`;
-            const noteData = activeNotes[noteId];
-            
-            if (!noteData) {
-                return;
-            }
-
-            // Плавное затухание звука
-            const releaseTime = 0.3; // Время затухания в секундах
-            noteData.gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + releaseTime);
-            noteData.overtoneGainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + releaseTime);
-            
-            // Останавливаем осцилляторы после затухания
-            noteData.oscillator.stop(audioCtx.currentTime + releaseTime);
-            noteData.overtoneOscillator.stop(audioCtx.currentTime + releaseTime);
-            
-            // Удаляем ноту из активных через время затухания
-            setTimeout(() => {
-                delete activeNotes[noteId];
-            }, releaseTime * 1000);
-
-            // Убираем визуальный отклик
-            const key = document.querySelector(`.key[data-note="${noteIndex}"][data-octave="${octave}"]`);
-            if (key) {
-                key.classList.remove('active');
-            }
-        }
-
-        // ----- Обработка клавиатуры -----
-        document.addEventListener('keydown', (e) => {
-            const key = e.key;
-            // Проверяем модификаторы
-            if (e.key === 'Meta' && e.location === 1) { // Левый Command
-                e.preventDefault();
-                currentOctave = Math.max(0, currentOctave - 1);
-                renderPiano(currentOctave);
-                return;
-            }
-            if (e.key === 'Meta' && e.location === 2) { // Правый Command
-                e.preventDefault();
-                currentOctave = Math.min(8, currentOctave + 1);
-                renderPiano(currentOctave);
-                return;
-            }
-
-            const noteIndex = keyMap[key];
-            if (noteIndex !== undefined) {
-                e.preventDefault();
-                // Если нажата '=', это C следующей октавы
-                if (key === '=') {
-                    startNote(0, currentOctave + 1);
-                } else {
-                    startNote(noteIndex, currentOctave);
-                }
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            const key = e.key;
-            const noteIndex = keyMap[key];
-            if (noteIndex !== undefined) {
-                e.preventDefault();
-                if (key === '=') {
-                    stopNote(0, currentOctave + 1);
-                } else {
-                    stopNote(noteIndex, currentOctave);
-                }
-            }
-        });
-
-        // ----- Кнопки управления -----
-        document.getElementById('octaveDown').addEventListener('click', () => {
+document.addEventListener('keydown', e => {
+    // Смена октавы через Command
+    if (e.key === 'Meta') {
+        if (e.location === 1) { // Левый
             currentOctave = Math.max(0, currentOctave - 1);
-            renderPiano(currentOctave);
-        });
-        document.getElementById('octaveUp').addEventListener('click', () => {
+            document.getElementById('octaveDisplay').textContent = `Октава ${currentOctave}`;
+        } else if (e.location === 2) { // Правый
             currentOctave = Math.min(8, currentOctave + 1);
-            renderPiano(currentOctave);
-        });
+            document.getElementById('octaveDisplay').textContent = `Октава ${currentOctave}`;
+        }
+        e.preventDefault();
+        return;
+    }
 
-        // ----- Инициализация -----
-        renderPiano(currentOctave);
-    </script>
+    if (pressedKeys.has(e.key)) return; // Игнорируем auto-repeat
+    pressedKeys.add(e.key);
+
+    const mapped = KEY_MAP[e.key];
+    if (mapped === undefined) return;
+    e.preventDefault();
+
+    if (mapped === 'next_c') {
+        startNote(0, currentOctave + 1);
+    } else {
+        startNote(mapped, currentOctave);
+    }
+});
+
+document.addEventListener('keyup', e => {
+    pressedKeys.delete(e.key);
+
+    const mapped = KEY_MAP[e.key];
+    if (mapped === undefined) return;
+
+    if (mapped === 'next_c') {
+        stopNote(0, currentOctave + 1);
+    } else {
+        stopNote(mapped, currentOctave);
+    }
+});
+
+// ============================================================
+// Управление
+// ============================================================
+document.getElementById('octaveDown').addEventListener('click', () => {
+    currentOctave = Math.max(0, currentOctave - 1);
+    document.getElementById('octaveDisplay').textContent = `Октава ${currentOctave}`;
+});
+document.getElementById('octaveUp').addEventListener('click', () => {
+    currentOctave = Math.min(8, currentOctave + 1);
+    document.getElementById('octaveDisplay').textContent = `Октава ${currentOctave}`;
+});
+document.getElementById('timbreSelect').addEventListener('change', e => {
+    currentTimbre = e.target.value;
+    // Глушим все активные ноты
+    Object.keys(activeNotes).forEach(id => {
+        const [ni, oct] = id.split('-').map(Number);
+        stopNote(ni, oct);
+    });
+});
+</script>
 </body>
 </html>
